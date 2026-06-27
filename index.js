@@ -46,7 +46,6 @@ client.on('messageCreate', async (message) => {
     const now = Date.now();
 
     const timestamps = users.get(userId) || [];
-
     timestamps.push(now);
 
     const recent = timestamps.filter(t => now - t < 5000);
@@ -56,36 +55,45 @@ client.on('messageCreate', async (message) => {
     console.log(`[ANTI-SPAM] ${message.author.tag} -> ${recent.length}`);
 
     // ===================
-    // DETECTION SPAM
+    // DETECTION IMAGES
     // ===================
-    if (recent.length >= 5) {
-        console.log("🔥 SPAM DETECTÉ");
+    const hasImages = message.attachments.size > 0;
 
-        const member = await message.guild.members.fetch(userId).catch(err => {
-            console.log("❌ FETCH ERROR:", err);
-            return null;
-        });
+    // ===================
+    // RAID / SPAM TRIGGER
+    // ===================
+    const isSpam = recent.length >= 5;
 
-        console.log("MEMBER =", member?.user?.tag);
+    if (isSpam || hasImages) {
 
-        if (!member) {
-            console.log("❌ MEMBER NULL");
-            return;
-        }
-
+        // supprimer message (anti scam images)
         try {
-            await member.timeout(60_000, "Anti-spam automatique");
-
-            console.log("✅ TIMEOUT OK");
-
-            message.channel.send(
-                `⛔ ${message.author} a été timeout pour spam (1 min)`
-            );
+            await message.delete();
+            console.log(`🧹 Message supprimé de ${message.author.tag}`);
         } catch (err) {
-            console.log("❌ TIMEOUT ERROR:", err);
+            console.log("❌ DELETE ERROR:", err);
         }
 
-        users.set(userId, []);
+        // timeout si spam
+        if (isSpam) {
+            const member = await message.guild.members.fetch(userId).catch(() => null);
+
+            if (!member) return;
+
+            try {
+                await member.timeout(60_000, "Anti-spam / anti-raid images");
+
+                message.channel.send(
+                    `⛔ ${message.author} a été timeout (anti-spam)`
+                );
+
+                console.log(`⛔ Timeout appliqué à ${message.author.tag}`);
+            } catch (err) {
+                console.log("❌ TIMEOUT ERROR:", err);
+            }
+
+            users.set(userId, []);
+        }
     }
 });
 
