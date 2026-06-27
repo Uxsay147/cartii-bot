@@ -1,3 +1,39 @@
+const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers
+    ]
+});
+
+// =======================
+// READY
+// =======================
+client.once('ready', () => {
+    console.log(`🤖 Connecté en tant que ${client.user.tag}`);
+});
+
+// =======================
+// COMMANDES BASIQUES
+// =======================
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+
+    if (message.content === '!ping') {
+        return message.reply('🏓 Pong !');
+    }
+
+    if (message.content === '!help') {
+        return message.reply('Commandes disponibles : !ping');
+    }
+});
+
+// =======================
+// ANTI-SPAM FIXÉ
+// =======================
 const users = new Map();
 
 client.on('messageCreate', async (message) => {
@@ -9,17 +45,17 @@ client.on('messageCreate', async (message) => {
 
     const timestamps = users.get(userId) || [];
 
-    // ajoute timestamp
+    // ajouter message
     timestamps.push(now);
 
-    // garde seulement les messages des 5 dernières secondes
+    // garder uniquement les 5 dernières secondes
     const recent = timestamps.filter(t => now - t < 5000);
 
     users.set(userId, recent);
 
     console.log(`[ANTI-SPAM] ${message.author.tag} -> ${recent.length}`);
 
-    // seuil spam
+    // si spam détecté
     if (recent.length >= 5) {
         const member = await message.guild.members.fetch(userId).catch(() => null);
 
@@ -35,9 +71,13 @@ client.on('messageCreate', async (message) => {
             console.log("Erreur timeout:", err);
         }
 
-        // reset propre
         users.set(userId, []);
     } else {
         users.set(userId, recent);
     }
 });
+
+// =======================
+// LOGIN
+// =======================
+client.login(process.env.MTUyMDE3NTQwNjYzOTIxODc2OA.GR8fIr.D3bGD8vCXM3H0PC41h7t6jlNLJEjkUhxXbhmbE);
