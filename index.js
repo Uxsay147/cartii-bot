@@ -17,22 +17,22 @@ client.once('ready', () => {
 });
 
 // =======================
-// COMMANDES
+// COMMANDES BASIQUES
 // =======================
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     if (message.content === '!ping') {
-        message.reply('🏓 Pong !');
+        return message.reply('🏓 Pong !');
     }
 
     if (message.content === '!help') {
-        message.reply('Commandes: !ping');
+        return message.reply('Commandes disponibles : !ping');
     }
 });
 
 // =======================
-// ANTI-SPAM (PRO)
+// ANTI-SPAM FIXÉ
 // =======================
 const users = new Map();
 
@@ -43,46 +43,41 @@ client.on('messageCreate', async (message) => {
     const userId = message.author.id;
     const now = Date.now();
 
-    if (!users.has(userId)) {
-        users.set(userId, []);
-    }
+    const timestamps = users.get(userId) || [];
 
-    const timestamps = users.get(userId);
-
+    // ajouter message
     timestamps.push(now);
 
-    // garder seulement les 5 dernières secondes
+    // garder uniquement les 5 dernières secondes
     const recent = timestamps.filter(t => now - t < 5000);
+
     users.set(userId, recent);
 
     console.log(`[ANTI-SPAM] ${message.author.tag} -> ${recent.length}`);
 
-    // SI SPAM
+    // si spam détecté
     if (recent.length >= 5) {
-        const member = message.member;
+        const member = await message.guild.members.fetch(userId).catch(() => null);
 
-        if (
-            member &&
-            member.moderatable &&
-            member.permissions.has(PermissionsBitField.Flags.ModerateMembers)
-        ) {
-            try {
-                await member.timeout(60_000, "Anti-spam automatique");
+        if (!member) return;
 
-                message.channel.send(
-                    `⛔ ${message.author} a été timeout pour spam (1 min).`
-                );
-            } catch (err) {
-                console.log("Erreur timeout:", err);
-            }
+        try {
+            await member.timeout(60_000, "Anti-spam automatique");
+
+            message.channel.send(
+                `⛔ ${message.author} a été timeout pour spam (1 min).`
+            );
+        } catch (err) {
+            console.log("Erreur timeout:", err);
         }
 
         users.set(userId, []);
+    } else {
+        users.set(userId, recent);
     }
 });
 
 // =======================
-// LOGIN 24/7 (IMPORTANT)
+// LOGIN
 // =======================
-client.login(process.env.MTUyMDE3NTQwNjYzOTIxODc2OA.GR8fIr.D3bGD8vCXM3H0PC41h7t6jlNLJEjkUhxXbhmbE
-);
+client.login(process.env.MTUyMDE3NTQwNjYzOTIxODc2OA.GR8fIr.D3bGD8vCXM3H0PC41h7t6jlNLJEjkUhxXbhmbE);
