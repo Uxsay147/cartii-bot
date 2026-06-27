@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 
 const client = new Client({
     intents: [
@@ -55,18 +55,34 @@ client.on('messageCreate', async (message) => {
 
     console.log(`[ANTI-SPAM] ${message.author.tag} -> ${recent.length}`);
 
+    // ===================
+    // DETECTION SPAM
+    // ===================
     if (recent.length >= 5) {
-        const member = await message.guild.members.fetch(userId).catch(() => null);
-        if (!member) return;
+        console.log("🔥 SPAM DETECTÉ");
+
+        const member = await message.guild.members.fetch(userId).catch(err => {
+            console.log("❌ FETCH ERROR:", err);
+            return null;
+        });
+
+        console.log("MEMBER =", member?.user?.tag);
+
+        if (!member) {
+            console.log("❌ MEMBER NULL");
+            return;
+        }
 
         try {
             await member.timeout(60_000, "Anti-spam automatique");
+
+            console.log("✅ TIMEOUT OK");
 
             message.channel.send(
                 `⛔ ${message.author} a été timeout pour spam (1 min)`
             );
         } catch (err) {
-            console.log("Erreur timeout:", err);
+            console.log("❌ TIMEOUT ERROR:", err);
         }
 
         users.set(userId, []);
