@@ -84,4 +84,5 @@ client.on('messageCreate', async (message) => {
 // =======================
 // LOGIN 24/7 (IMPORTANT)
 // =======================
-client.login(process.env.MTUyMDE3NTQwNjYzOTIxODc2OA.GR8fIr.D3bGD8vCXM3H0PC41h7t6jlNLJEjkUhxXbhmbE);
+client.login(process.env.MTUyMDE3NTQwNjYzOTIxODc2OA.GR8fIr.D3bGD8vCXM3H0PC41h7t6jlNLJEjkUhxXbhmbE
+);
