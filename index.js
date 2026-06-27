@@ -1,5 +1,28 @@
 const { Client, GatewayIntentBits } = require('discord.js');
+const express = require("express");
 
+// =======================
+// EXPRESS (IMPORTANT POUR RENDER WEB SERVICE)
+// =======================
+const app = express();
+
+app.get("/", (req, res) => {
+    res.send("Cartii Bot is alive");
+});
+
+app.listen(3000, () => {
+    console.log("🌐 Web server running on port 3000");
+});
+
+// =======================
+// ANTI CRASH GLOBAL
+// =======================
+process.on('unhandledRejection', console.error);
+process.on('uncaughtException', console.error);
+
+// =======================
+// DISCORD CLIENT
+// =======================
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -22,7 +45,7 @@ client.once('ready', () => {
 const users = new Map();
 
 // =======================
-// MESSAGE HANDLER UNIQUE
+// MESSAGE HANDLER
 // =======================
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
@@ -32,11 +55,11 @@ client.on('messageCreate', async (message) => {
     // COMMANDES
     // ===================
     if (message.content === '!ping') {
-        return message.reply('🏓 Pong !');
+        return message.reply('🏓 Pong !').catch(console.error);
     }
 
     if (message.content === '!help') {
-        return message.reply('Commandes: !ping');
+        return message.reply('Commandes: !ping').catch(console.error);
     }
 
     // ===================
@@ -49,7 +72,6 @@ client.on('messageCreate', async (message) => {
     timestamps.push(now);
 
     const recent = timestamps.filter(t => now - t < 5000);
-
     users.set(userId, recent);
 
     console.log(`[ANTI-SPAM] ${message.author.tag} -> ${recent.length}`);
@@ -60,13 +82,13 @@ client.on('messageCreate', async (message) => {
     const hasImages = message.attachments.size > 0;
 
     // ===================
-    // RAID / SPAM TRIGGER
+    // TRIGGER SPAM
     // ===================
     const isSpam = recent.length >= 5;
 
     if (isSpam || hasImages) {
 
-        // supprimer message (anti scam images)
+        // DELETE MESSAGE
         try {
             await message.delete();
             console.log(`🧹 Message supprimé de ${message.author.tag}`);
@@ -74,18 +96,21 @@ client.on('messageCreate', async (message) => {
             console.log("❌ DELETE ERROR:", err);
         }
 
-        // timeout si spam
+        // TIMEOUT
         if (isSpam) {
             const member = await message.guild.members.fetch(userId).catch(() => null);
-
             if (!member) return;
 
             try {
                 await member.timeout(60_000, "Anti-spam / anti-raid images");
 
-                message.channel.send(
-                    `⛔ ${message.author} a été timeout (anti-spam)`
-                );
+                try {
+                    await message.channel.send(
+                        `⛔ ${message.author} a été timeout (anti-spam)`
+                    );
+                } catch (err) {
+                    console.log("❌ SEND ERROR:", err);
+                }
 
                 console.log(`⛔ Timeout appliqué à ${message.author.tag}`);
             } catch (err) {
@@ -98,6 +123,6 @@ client.on('messageCreate', async (message) => {
 });
 
 // =======================
-// LOGIN
+// LOGIN BOT
 // =======================
 client.login(process.env.TOKEN);
