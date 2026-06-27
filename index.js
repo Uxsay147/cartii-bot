@@ -85,3 +85,36 @@ client.on('messageCreate', async (message) => {
 // LOGIN 24/7 (IMPORTANT)
 // =======================
 client.login(process.env.TOKEN);
+const users = new Map();
+
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    if (!message.guild) return;
+
+    const userId = message.author.id;
+    const now = Date.now();
+
+    const timestamps = users.get(userId) || [];
+
+    timestamps.push(now);
+
+    const recent = timestamps.filter(t => now - t < 5000);
+
+    users.set(userId, recent);
+
+    console.log(`[ANTI-SPAM] ${message.author.tag} -> ${recent.length}`);
+
+    if (recent.length >= 5) {
+        const member = await message.guild.members.fetch(userId).catch(() => null);
+        if (!member) return;
+
+        try {
+            await member.timeout(60_000, "Anti-spam automatique");
+            message.channel.send(`⛔ ${message.author} a été timeout (anti-spam)`);
+        } catch (err) {
+            console.log("Erreur timeout:", err);
+        }
+
+        users.set(userId, []);
+    }
+});
