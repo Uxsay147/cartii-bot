@@ -434,7 +434,15 @@ client.on('messageCreate', async (message) => {
 // LOGIN BOT
 // =======================
 
-client.login(process.env.TOKEN);
+console.log("🚀 Arrivé avant le login Discord");
+
+client.login(process.env.TOKEN)
+    .then(() => {
+        console.log("✅ Login Discord réussi");
+    })
+    .catch(err => {
+        console.log("❌ Erreur Discord :", err);
+    });client.login(process.env.TOKEN);
             await message.guild.members.fetch(userId)
             .catch(() => null);
 
