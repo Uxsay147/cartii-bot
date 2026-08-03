@@ -1,5 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const express = require("express");
+const fs = require("fs");
+const imageUsers = new Map();
 
 // =======================
 // EXPRESS (IMPORTANT POUR RENDER/RAILWAY WEB SERVICE)
@@ -69,7 +71,33 @@ const users = new Map();
 // MAP ANTI-SPAM (images)
 // =======================
 const imageUsers = new Map();
+// =======================
+// SYSTEME RENDEZ-VOUS
+// =======================
 
+const rdvFile = "./rdv.json";
+
+if (!fs.existsSync(rdvFile)) {
+    fs.writeFileSync(
+        rdvFile,
+        JSON.stringify({
+            "7 décembre 19h00": null,
+            "7 décembre 20h00": null,
+            "8 décembre 18h00": null
+        }, null, 4)
+    );
+}
+
+function getRDV() {
+    return JSON.parse(fs.readFileSync(rdvFile));
+}
+
+function saveRDV(data) {
+    fs.writeFileSync(
+        rdvFile,
+        JSON.stringify(data, null, 4)
+    );
+}
 // =======================
 // MESSAGE HANDLER
 // =======================
@@ -83,15 +111,79 @@ client.on('messageCreate', async (message) => {
     if (message.content === '!ping') {
         return message.reply('🏓 Pong !').catch(console.error);
     }
-    if (message.content === '!help') {
-        return message.reply('Commandes: !ping').catch(console.error);
+   if (message.content === '!help') {
+    return message.reply('Commandes: !ping').catch(console.error);
+}
+
+
+// ===================
+// COMMANDES RENDEZ-VOUS
+// ===================
+
+if (message.content === "!rdv") {
+
+    const rdv = getRDV();
+
+    let texte = "📅 **Rendez-vous disponibles :**\n\n";
+
+    let i = 1;
+
+    for (const date in rdv) {
+
+        if (rdv[date]) {
+            texte += `❌ ${i} - ${date}\n`;
+        } else {
+            texte += `✅ ${i} - ${date}\n`;
+        }
+
+        i++;
     }
 
-    const userId = message.author.id;
+    texte += "\nPour réserver : `!prendre numéro`";
+
+    return message.reply(texte);
+}
+
+
+
+if (message.content.startsWith("!prendre")) {
+
+    const numero = Number(message.content.split(" ")[1]);
+
+    const rdv = getRDV();
+
+    const dates = Object.keys(rdv);
+
+    const choix = dates[numero - 1];
+
+
+    if (!choix) {
+        return message.reply("❌ Ce rendez-vous n'existe pas.");
+    }
+
+
+    if (rdv[choix]) {
+        return message.reply("❌ Ce créneau est déjà pris.");
+    }
+
+
+    rdv[choix] = message.author.id;
+
+    saveRDV(rdv);
+
+
+    return message.reply(
+        `✅ Ton rendez-vous est réservé pour **${choix}**`
+    );
+}
+
+
+
+const userId = message.author.id;
     const now = Date.now();
 
     // ===================
-    // ANTI-SPAM TEXTE
+    // ANTI-SPAM TEXTE<
     // ===================
     const timestamps = users.get(userId) || [];
     timestamps.push(now);
